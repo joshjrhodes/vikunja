@@ -513,6 +513,16 @@ func getNativeValueForTaskField(fieldName string, comparator taskFilterComparato
 		return nil, valueSlice, nil
 	}
 
+	// "blocked" has no column on tasks; it is resolved to an EXISTS subquery in
+	// task_search.go. Accept a plain bool here so the parser validates it.
+	if realFieldName == "Blocked" {
+		b, err := strconv.ParseBool(strings.TrimSpace(value))
+		if err != nil {
+			return nil, nil, ErrInvalidTaskFilterValue{Field: fieldName, Value: value}
+		}
+		return nil, b, nil
+	}
+
 	field, ok := reflect.TypeOf(&Task{}).Elem().FieldByName(realFieldName)
 	if !ok {
 		return nil, nil, ErrInvalidTaskField{TaskField: fieldName}

@@ -630,6 +630,12 @@
 			<Icon icon="chevron-down" />
 		</BaseButton>
 
+		<BlockedDoneModal
+			:enabled="showBlockedDone"
+			:blockers="blockedDoneBlockers"
+			@close="showBlockedDone = false"
+			@submit="showBlockedDone = false; blockedDoneConfirmed = true; toggleTaskDone()"
+		/>
 		<Modal
 			:enabled="showDeleteModal"
 			@close="showDeleteModal = false"
@@ -653,6 +659,8 @@
 
 <script lang="ts" setup>
 import {ref, reactive, shallowReactive, computed, watch, nextTick, onMounted} from 'vue'
+import BlockedDoneModal from '@/components/tasks/partials/BlockedDoneModal.vue'
+import {getOpenBlockers} from '@/helpers/openBlockers'
 import {useRouter, useRoute, type RouteLocation, onBeforeRouteLeave} from 'vue-router'
 import {useI18n} from 'vue-i18n'
 import {unrefElement, useDebounceFn, useElementSize, useIntersectionObserver, useMutationObserver} from '@vueuse/core'
@@ -1127,6 +1135,9 @@ useTaskDetailShortcuts({
 })
 
 const showDeleteModal = ref(false)
+const showBlockedDone = ref(false)
+const blockedDoneBlockers = ref<ITask[]>([])
+const blockedDoneConfirmed = ref(false)
 
 async function deleteTask() {
 	await taskStore.delete(task.value)
@@ -1135,6 +1146,16 @@ async function deleteTask() {
 }
 
 async function toggleTaskDone() {
+	if (!task.value.done && !blockedDoneConfirmed.value) {
+		const blockers = getOpenBlockers(task.value)
+		if (blockers.length > 0) {
+			blockedDoneBlockers.value = blockers
+			showBlockedDone.value = true
+			return
+		}
+	}
+	blockedDoneConfirmed.value = false
+
 	const newTask = {
 		...task.value,
 		done: !task.value.done,

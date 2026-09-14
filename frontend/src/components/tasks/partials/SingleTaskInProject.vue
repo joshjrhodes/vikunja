@@ -195,10 +195,18 @@
 			</template>
 		</template>
 	</div>
+	<BlockedDoneModal
+		:enabled="showBlockedDone"
+		:blockers="blockedDoneBlockers"
+		@close="showBlockedDone = false"
+		@submit="showBlockedDone = false; blockedDoneConfirmed = true; markAsDone(true)"
+	/>
 </template>
 
 <script setup lang="ts">
 import {ref, watch, shallowReactive, onMounted, computed} from 'vue'
+import BlockedDoneModal from '@/components/tasks/partials/BlockedDoneModal.vue'
+import {getOpenBlockers} from '@/helpers/openBlockers'
 import {useI18n} from 'vue-i18n'
 
 import TaskModel, {getHexColor} from '@/models/task'
@@ -326,7 +334,21 @@ const isOverdue = computed(() => (
 
 let oldTask
 
+const showBlockedDone = ref(false)
+const blockedDoneBlockers = ref<ITask[]>([])
+const blockedDoneConfirmed = ref(false)
+
 async function markAsDone(checked: boolean, wasReverted: boolean = false) {
+	if (checked && !wasReverted && !blockedDoneConfirmed.value) {
+		const blockers = getOpenBlockers(task.value)
+		if (blockers.length > 0) {
+			blockedDoneBlockers.value = blockers
+			showBlockedDone.value = true
+			return
+		}
+	}
+	blockedDoneConfirmed.value = false
+
 	oldTask = {...task.value}
 
 	// Fire the request immediately and with the intended done value snapshotted, so a re-render or

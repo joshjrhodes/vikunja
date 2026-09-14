@@ -284,6 +284,29 @@ func convertFiltersToDBFilterCondWithAlias(rawFilters []*taskFilter, includeNull
 			continue
 		}
 
+		if f.field == taskPropertyBlocked {
+			// blocked = true  -> at least one open task blocks this one
+			// blocked = false -> nothing open is blocking it (the "Ready" filter)
+			blocked, _ := f.value.(bool)
+			if f.comparator == taskFilterComparatorNotEquals {
+				blocked = !blocked
+			}
+			openBlocker := builder.
+				Select("1").
+				From("task_relations", "tr").
+				Join("INNER", "tasks blocker", "blocker.id = tr.other_task_id").
+				Where(builder.Expr("tr.task_id = " + taskAlias + ".id")).
+				And(builder.Eq{"tr.relation_kind": RelationKindBlocked}).
+				And(builder.Eq{"blocker.done": false})
+			if blocked {
+				dbFilters = append(dbFilters, builder.Exists(openBlocker))
+			} else {
+				dbFilters = append(dbFilters, builder.NotExists(openBlocker))
+			}
+			dbFilterJoins = append(dbFilterJoins, f.join)
+			continue
+		}
+
 		if f.field == taskPropertyBucketID {
 			f.field = "task_buckets.`bucket_id`"
 		} else {

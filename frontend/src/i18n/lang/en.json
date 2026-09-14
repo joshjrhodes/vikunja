@@ -986,6 +986,11 @@
     }
   },
   "task": {
+    "blockedDone": {
+      "header": "This task is still blocked",
+      "text": "These tasks are in front of it and not done yet:",
+      "hint": "Marking it done anyway is fine — this is a heads-up, not a lock."
+    },
     "new": "Create a task",
     "createSuccess": "The task was successfully created.",
     "bulkCreateUnexpectedResponse": "The server returned an unexpected number of created tasks.",

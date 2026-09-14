@@ -124,10 +124,18 @@
 			</div>
 		</div>
 	</div>
+	<BlockedDoneModal
+		:enabled="showBlockedDone"
+		:blockers="blockedDoneBlockers"
+		@close="showBlockedDone = false; pendingBlockedTask = null"
+		@submit="showBlockedDone = false; toggleTaskDone(pendingBlockedTask!)"
+	/>
 </template>
 
 <script lang="ts" setup>
 import {computed, ref, watch} from 'vue'
+import BlockedDoneModal from '@/components/tasks/partials/BlockedDoneModal.vue'
+import {getOpenBlockers} from '@/helpers/openBlockers'
 import {useRouter} from 'vue-router'
 
 import {useGlobalNow} from '@/composables/useGlobalNow'
@@ -193,7 +201,22 @@ const isOverdue = computed(() => (
 	props.task.dueDate.getTime() <= now.value.getTime()
 ))
 
+const showBlockedDone = ref(false)
+const blockedDoneBlockers = ref<ITask[]>([])
+const pendingBlockedTask = ref<ITask | null>(null)
+
 async function toggleTaskDone(task: ITask) {
+	if (!task.done && pendingBlockedTask.value !== task) {
+		const blockers = getOpenBlockers(task)
+		if (blockers.length > 0) {
+			blockedDoneBlockers.value = blockers
+			pendingBlockedTask.value = task
+			showBlockedDone.value = true
+			return
+		}
+	}
+	pendingBlockedTask.value = null
+
 	const isRecurringTask = task.repeatAfter.amount > 0 || task.repeatMode === TASK_REPEAT_MODES.REPEAT_MODE_MONTH
 	const wasBeingMarkedDone = !task.done
 	

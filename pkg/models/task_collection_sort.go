@@ -32,6 +32,9 @@ const (
 	taskPropertyDescription   string = "description"
 	taskPropertyDone          string = "done"
 	taskPropertyDoneAt        string = "done_at"
+	// taskPropertyBlocked is a virtual filter field (no column): true when an open
+	// task blocks this one. Filtering only; not valid for sorting.
+	taskPropertyBlocked string = "blocked"
 	taskPropertyDueDate       string = "due_date"
 	taskPropertyCreatedByID   string = "created_by_id"
 	taskPropertyProjectID     string = "project_id"
